@@ -1,91 +1,148 @@
-import 'package:firebase_test/core/functions/vailInput.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 
 class CustomTextFormField extends StatefulWidget {
   final String hintText;
   final TextEditingController controller;
-  final int min;
-  final int max;
+  final String? validationType;
   final bool visPassword;
   final bool showVisPasswordToggle;
-  final void Function()? onTapIcon;
-  final String? validationType;
+  final int min;
+  final int max;
   final TextInputType? keyboardType;
+  final Widget? prefixIcon;
+  final Widget? suffixIcon;
 
   const CustomTextFormField({
     super.key,
     required this.hintText,
     required this.controller,
-    required this.min,
-    required this.max,
+    this.validationType,
     this.visPassword = false,
     this.showVisPasswordToggle = false,
-    this.onTapIcon,
-    this.validationType,
+    this.min = 1,
+    this.max = 100,
     this.keyboardType,
+    this.prefixIcon,
+    this.suffixIcon,
   });
 
   @override
-  _CustomTextFormFieldState createState() => _CustomTextFormFieldState();
+  State<CustomTextFormField> createState() => _CustomTextFormFieldState();
 }
 
 class _CustomTextFormFieldState extends State<CustomTextFormField> {
-  late bool _visPassword;
-  late TextEditingController conf_pass;
-
-  @override
-  void initState() {
-    super.initState();
-    _visPassword = widget.visPassword;
-    conf_pass = TextEditingController();
-  }
-
-  void _handleTapIcon() {
-    if (widget.onTapIcon != null) {
-      widget.onTapIcon!();
-    }
-
-    setState(() {
-      _visPassword = !_visPassword;
-    });
-  }
+  bool _obscureText = true;
 
   @override
   Widget build(BuildContext context) {
-    var screenWidth = MediaQuery.of(context).size.width;
-    var iconSize = screenWidth * 0.05;
-    var padding = screenWidth * 0.04;
-    return TextFormField(
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade300),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 3,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: TextFormField(
         controller: widget.controller,
-        keyboardType: widget.keyboardType,
-        validator: (valid) {
-          return validInput(valid!, widget.max, widget.min,
-              type: widget.validationType);
+        obscureText: widget.visPassword ? _obscureText : false,
+        keyboardType: widget.keyboardType ??
+            (widget.validationType == 'email'
+                ? TextInputType.emailAddress
+                : TextInputType.text),
+        validator: (value) {
+          if (value == null || value.isEmpty) {
+            return '${widget.hintText} is required';
+          }
+
+          if (value.length < widget.min) {
+            return '${widget.hintText} must be at least ${widget.min} characters';
+          }
+
+          if (value.length > widget.max) {
+            return '${widget.hintText} must be less than ${widget.max} characters';
+          }
+
+          if (widget.validationType == 'email') {
+            if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+              return 'Please enter a valid email address';
+            }
+          }
+
+          if (widget.validationType == 'password') {
+            if (value.length < 8) {
+              return 'Password must be at least 8 characters';
+            }
+            if (!RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)').hasMatch(value)) {
+              return 'Password must contain at least one uppercase letter, one lowercase letter, and one number';
+            }
+          }
+
+          return null;
         },
-        obscureText: _visPassword,
         decoration: InputDecoration(
-            errorMaxLines: 2,
-            suffixIcon: widget.showVisPasswordToggle
-                ? IconButton(
-                    icon: Icon(
-                      _visPassword ? Icons.visibility_off : Icons.visibility,
-                      color: Color.fromARGB(255, 235, 142, 2),
-                      size: iconSize,
-                    ),
-                    onPressed: _handleTapIcon,
-                  )
-                : null,
-            hintText: widget.hintText,
-            contentPadding:
-                EdgeInsets.symmetric(vertical: padding, horizontal: padding),
-            focusedBorder: const OutlineInputBorder(
-              borderRadius: BorderRadius.all(Radius.circular(20.0)),
-              borderSide: BorderSide(
-                  color: Color.fromARGB(255, 235, 142, 2), width: 2.0),
+          hintText: widget.hintText,
+          hintStyle: TextStyle(
+            color: Colors.grey.shade500,
+            fontSize: 16,
+          ),
+          prefixIcon: widget.prefixIcon,
+          suffixIcon: widget.showVisPasswordToggle
+              ? IconButton(
+                  icon: Icon(
+                    _obscureText ? Icons.visibility : Icons.visibility_off,
+                    color: Colors.grey.shade600,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _obscureText = !_obscureText;
+                    });
+                  },
+                )
+              : widget.suffixIcon,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(
+              color: Color.fromARGB(255, 235, 142, 2),
+              width: 2,
             ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(20),
-            )));
+          ),
+          errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(
+              color: Colors.red,
+              width: 1,
+            ),
+          ),
+          focusedErrorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(
+              color: Colors.red,
+              width: 2,
+            ),
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 16,
+          ),
+          filled: true,
+          fillColor: Colors.white,
+        ),
+      ),
+    );
   }
 }

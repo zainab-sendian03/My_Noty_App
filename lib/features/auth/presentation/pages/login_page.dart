@@ -1,32 +1,35 @@
 import 'dart:math';
-import 'package:firebase_test/features/auth/presentation/controllers/login_controller.dart';
+import 'package:firebase_test/config/routes/app_pages.dart';
+import 'package:firebase_test/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:firebase_test/core/constants/customTextForm.dart';
 import 'package:firebase_test/core/constants/screen_extension.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 
+import '../../../../config/themes/assets.dart';
+
 class LoginPage extends StatefulWidget {
-  LoginPage({super.key});
+  const LoginPage({super.key});
 
   @override
   State<LoginPage> createState() => _LoginPageState();
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
-  final loginController = Get.put(LoginController());
+  final authController = Get.find<AuthController>();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color.fromARGB(255, 255, 255, 255),
       appBar: AppBar(
         title: const Text(
           "Login",
           style: TextStyle(color: Colors.white, fontSize: 20),
         ),
         backgroundColor: const Color.fromARGB(255, 235, 142, 2),
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: Obx(() => Stack(
             children: [
@@ -38,42 +41,39 @@ class _LoginPageState extends State<LoginPage> {
                     top: 10,
                   ),
                   child: Form(
-                    key: loginController.formKey,
+                    key: authController.formKey_login,
                     child: Column(
                       children: [
                         Image.asset(
-                          "asset/images/icon.png",
+                          Assets.assetsImagesIcon,
                           width: context.screenWidth * 0.7,
                           height: context.screenHeight * 0.3,
                         ),
                         CustomTextFormField(
                           hintText: "email",
-                          controller: emailController,
+                          controller: authController.loginEmailController,
                           min: 10,
                           max: 100,
-                          validationType: 'email',
                         ),
                         const SizedBox(height: 20),
                         CustomTextFormField(
                           hintText: "Password",
-                          controller: passwordController,
+                          controller: authController.loginPasswordController,
                           min: 8,
                           max: 20,
                           visPassword: true,
                           showVisPasswordToggle: true,
-                          validationType: 'password',
                         ),
                         Transform.translate(
                           offset: const Offset(100, -10),
                           child: TextButton(
                             onPressed: () {
-                              Get.toNamed('/forgot-password');
+                              Get.toNamed(AppPages.forgetPassword);
                             },
                             style: ButtonStyle(
-                              padding:
-                                  MaterialStateProperty.all(EdgeInsets.zero),
+                              padding: WidgetStateProperty.all(EdgeInsets.zero),
                               backgroundColor:
-                                  MaterialStateProperty.all(Colors.transparent),
+                                  WidgetStateProperty.all(Colors.transparent),
                             ),
                             child: const Text(
                               "Forget Password?",
@@ -88,9 +88,10 @@ class _LoginPageState extends State<LoginPage> {
                           width: double.infinity,
                           child: MaterialButton(
                             onPressed: () async {
-                              await loginController.signInWithEmailAndPassword(
-                                emailController.text.trim(),
-                                passwordController.text.trim(),
+                              await authController.signInWithEmail(
+                                authController.loginEmailController.text.trim(),
+                                authController.loginPasswordController.text
+                                    .trim(),
                               );
                             },
                             height: max(context.screenHeight * 0.06, 50),
@@ -112,7 +113,7 @@ class _LoginPageState extends State<LoginPage> {
                           width: double.infinity,
                           child: MaterialButton(
                             onPressed: () async {
-                              await loginController.signInWithGoogle();
+                              await authController.signInWithGoogle();
                             },
                             height: max(context.screenHeight * 0.06, 50),
                             color: Colors.red[700],
@@ -130,8 +131,8 @@ class _LoginPageState extends State<LoginPage> {
                                   ),
                                 ),
                                 Image.asset(
-                                  "asset/images/R.png",
-                                  width: context.screenHeight * 0.05,
+                                  Assets.assetsImagesGoogle,
+                                  width: context.screenHeight * 0.03,
                                 )
                               ],
                             ),
@@ -145,10 +146,10 @@ class _LoginPageState extends State<LoginPage> {
                               offset: const Offset(-10, 0),
                               child: TextButton(
                                 onPressed: () {
-                                  Get.toNamed('/signup');
+                                  Get.toNamed(AppPages.signUp);
                                 },
                                 style: ButtonStyle(
-                                  backgroundColor: MaterialStateProperty.all(
+                                  backgroundColor: WidgetStateProperty.all(
                                       Colors.transparent),
                                 ),
                                 child: const Text(
@@ -168,12 +169,21 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
               ),
-              if (loginController.isLoading.value)
-                Center(
-                  child: LoadingAnimationWidget.waveDots(
-                    color: Colors.orange,
-                    size: 40,
-                  ),
+              if (authController.isLoading.value)
+                Stack(
+                  children: [
+                    Container(
+                      color: Colors.black.withOpacity(0.5),
+                      width: double.infinity,
+                      height: double.infinity,
+                    ),
+                    Center(
+                      child: LoadingAnimationWidget.waveDots(
+                        color: Colors.orange,
+                        size: 40,
+                      ),
+                    ),
+                  ],
                 ),
             ],
           )),

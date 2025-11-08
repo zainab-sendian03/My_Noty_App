@@ -1,104 +1,84 @@
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:dartz/dartz.dart';
+import 'package:firebase_test/core/errors/failure.dart';
 import 'package:firebase_test/features/auth/domain/entities/user_entity.dart';
 import 'package:firebase_test/features/auth/domain/repositories/auth_repository.dart';
-import 'package:google_sign_in/google_sign_in.dart';
+import 'package:firebase_test/features/auth/data/datesources/auth_remote_data_source.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
-  final FirebaseAuth _auth;
-  final GoogleSignIn _googleSignIn;
+  final AuthRemoteDataSource _remoteDataSource;
 
-  AuthRepositoryImpl(this._auth, this._googleSignIn);
+  AuthRepositoryImpl(this._remoteDataSource);
 
   @override
-  Future<UserEntity?> signInWithEmailAndPassword(
+  Future<Either<Failure, UserEntity?>> signInWithEmailAndPassword(
       String email, String password) async {
     try {
-      final userCredential = await _auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-      return _mapFirebaseUserToEntity(userCredential.user);
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  @override
-  Future<UserEntity?> signInWithGoogle() async {
-    try {
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-
-      if (googleUser == null) {
-        return null;
-      }
-
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
-
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      final userCredential = await _auth.signInWithCredential(credential);
-
-      final user = _mapFirebaseUserToEntity(userCredential.user);
-
-      if (user.uid == null) {
-        throw Exception('Failed to get user information after Google sign in');
-      }
-
+      final user =
+          await _remoteDataSource.signInWithEmailAndPassword(email, password);
       return user;
-    } on FirebaseAuthException catch (e) {
-      if (e.code == 'too-many-requests') {
-        throw Exception('Too many sign-in attempts. Please try again later.');
-      }
-      throw Exception('Firebase Auth Error: ${e.message}');
     } catch (e) {
-      throw Exception('Google Sign In Error: $e');
+      return Left(Failure(
+        errMessage: e.toString(),
+        statusCode: 500,
+      ));
     }
   }
 
   @override
-  Future<void> signOut() async {
+  Future<Either<Failure, UserEntity?>> signInWithGoogle() async {
     try {
-      await Future.wait([
-        _auth.signOut(),
-        _googleSignIn.signOut(),
-      ]);
+      final user = await _remoteDataSource.signInWithGoogle();
+      return user;
     } catch (e) {
-      throw Exception('Sign Out Error: $e');
+      return Left(Failure(
+        errMessage: e.toString(),
+        statusCode: 500,
+      ));
     }
   }
 
   @override
-  Future<UserEntity?> getCurrentUser() async {
-    final user = _auth.currentUser;
-    return user != null ? _mapFirebaseUserToEntity(user) : null;
-  }
-
-  UserEntity _mapFirebaseUserToEntity(User? user) {
-    if (user == null) return UserEntity();
-
-    return UserEntity(
-      uid: user.uid,
-      email: user.email,
-      displayName: user.displayName,
-      photoURL: user.photoURL,
-    );
+  Future<Either<Failure, void>> signOut() async {
+    try {
+      await _remoteDataSource.signOut();
+      return const Right(null);
+    } catch (e) {
+      return Left(Failure(
+        errMessage: e.toString(),
+        statusCode: 500,
+      ));
+    }
   }
 
   @override
-  Future<UserEntity?> signUpWithEmailAndPassword(
-      String email, String password) async {
+  Future<Either<Failure, UserEntity?>> getCurrentUser() async {
     try {
-      final userCredential = await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
+      final user = await _remoteDataSource.getCurrentUser();
+      return user;
+    } catch (e) {
+      return Left(Failure(
+        errMessage: e.toString(),
+        statusCode: 500,
+      ));
+    }
+  }
+
+  @override
+  Future<Either<Failure, UserEntity?>> signUpWithEmailAndPassword(
+      String email, String password,
+      {String? displayName}) async {
+    try {
+      final user = await _remoteDataSource.signUpWithEmailAndPassword(
+        email,
+        password,
+        displayName: displayName,
       );
-      return _mapFirebaseUserToEntity(userCredential.user);
+      return user;
     } catch (e) {
-      rethrow;
+      return Left(Failure(
+        errMessage: e.toString(),
+        statusCode: 500,
+      ));
     }
   }
 }

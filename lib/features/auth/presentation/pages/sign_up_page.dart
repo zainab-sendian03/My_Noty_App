@@ -1,8 +1,9 @@
 import 'dart:math';
+import 'package:firebase_test/config/routes/app_pages.dart';
+import 'package:firebase_test/config/themes/assets.dart';
 import 'package:firebase_test/core/constants/customTextForm.dart';
 import 'package:firebase_test/core/constants/screen_extension.dart';
-import 'package:firebase_test/features/auth/presentation/controllers/signup_controller.dart';
-import 'package:firebase_test/features/auth/presentation/pages/login_page.dart';
+import 'package:firebase_test/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
@@ -15,16 +16,12 @@ class SignUpPage extends StatefulWidget {
 }
 
 class _SignUpPageState extends State<SignUpPage> {
-  final username = TextEditingController();
-  final email = TextEditingController();
-  final password = TextEditingController();
-  final conpassword = TextEditingController();
-
-  final SignUpController signUpController = Get.put(SignUpController());
+  final authController = Get.find<AuthController>();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color.fromARGB(255, 255, 255, 255),
       appBar: AppBar(
         iconTheme: const IconThemeData(color: Colors.white),
         title: const Text(
@@ -41,33 +38,35 @@ class _SignUpPageState extends State<SignUpPage> {
               padding: const EdgeInsets.only(left: 20, right: 20, top: 10),
               child: SingleChildScrollView(
                 child: Form(
-                  key: signUpController.formKey,
+                  key: authController.formKey_signUp,
                   child: Column(
                     children: [
                       Image.asset(
-                        "asset/images/icon.png",
+                        Assets.assetsImagesIcon,
                         width: context.screenWidth * 0.7,
                         height: context.screenHeight * 0.3,
                       ),
                       CustomTextFormField(
                           hintText: "User name",
-                          controller: username,
+                          controller: authController.usernameController,
                           min: 3,
                           max: 100),
                       const SizedBox(
                         height: 20,
                       ),
                       CustomTextFormField(
+                          validationType: "email",
                           hintText: "E-mail",
-                          controller: email,
+                          controller: authController.signupEmailController,
                           min: 8,
                           max: 100),
                       const SizedBox(
                         height: 20,
                       ),
                       CustomTextFormField(
+                          validationType: "password",
                           hintText: "Password",
-                          controller: password,
+                          controller: authController.signupPasswordController,
                           visPassword: true,
                           showVisPasswordToggle: true,
                           min: 8,
@@ -76,8 +75,9 @@ class _SignUpPageState extends State<SignUpPage> {
                         height: 20,
                       ),
                       CustomTextFormField(
+                          validationType: "password",
                           hintText: "Confirm Password",
-                          controller: conpassword,
+                          controller: authController.confirmPasswordController,
                           visPassword: true,
                           showVisPasswordToggle: true,
                           min: 8,
@@ -90,8 +90,10 @@ class _SignUpPageState extends State<SignUpPage> {
                         height: max(context.screenHeight * 0.06, 50),
                         child: MaterialButton(
                           onPressed: () async {
-                            await signUpController.signUpWithEmailAndPassword(
-                                email.text, password.text);
+                            await authController.signUpWithEmailAndPassword(
+                                authController.signupEmailController.text,
+                                authController.signupPasswordController.text,
+                                authController.confirmPasswordController.text);
                           },
                           color: const Color.fromARGB(255, 235, 142, 2),
                           shape: RoundedRectangleBorder(
@@ -110,8 +112,7 @@ class _SignUpPageState extends State<SignUpPage> {
                             offset: const Offset(-10, 0),
                             child: TextButton(
                               onPressed: () {
-                                Navigator.of(context).push(MaterialPageRoute(
-                                    builder: (context) => LoginPage()));
+                                Get.toNamed(AppPages.login);
                               },
                               style: ButtonStyle(
                                 backgroundColor: MaterialStateProperty.all(
@@ -133,12 +134,21 @@ class _SignUpPageState extends State<SignUpPage> {
                 ),
               ),
             ),
-            if (signUpController.isLoading.value)
-              Center(
-                child: LoadingAnimationWidget.waveDots(
-                  color: Colors.orange,
-                  size: 40,
-                ),
+            if (authController.isLoading.value)
+              Stack(
+                children: [
+                  Container(
+                    color: Colors.black.withOpacity(0.5),
+                    width: double.infinity,
+                    height: double.infinity,
+                  ),
+                  Center(
+                    child: LoadingAnimationWidget.waveDots(
+                      color: Colors.orange,
+                      size: 40,
+                    ),
+                  ),
+                ],
               ),
           ],
         );

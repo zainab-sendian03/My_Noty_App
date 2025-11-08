@@ -1,11 +1,10 @@
-import 'package:device_preview/device_preview.dart';
-import 'package:firebase_test/core/constants/screen_size_inherited_widget.dart';
-import 'package:firebase_test/features/auth/presentation/pages/home.dart';
-import 'package:firebase_test/features/auth/presentation/pages/sign_up_page.dart';
+import 'package:firebase_test/config/routes/app_pages.dart';
+import 'package:firebase_test/config/routes/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:get/get.dart';
-import 'package:firebase_test/features/auth/presentation/pages/login_page.dart';
+import 'package:firebase_test/core/di/service_locator.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,28 +17,31 @@ void main() async {
       storageBucket: "test-noteapp-9e978.firebasestorage.app",
     ),
   );
+
+  // Initialize Firebase App Check (optional but recommended)
+  // This removes the App Check warning
+  try {
+    await FirebaseAppCheck.instance.activate(
+      // For debug builds, use debug provider
+      // For production, configure with deviceCheckProvider (iOS) or playIntegrityProvider (Android)
+      androidProvider: AndroidProvider.debug,
+    );
+  } catch (e) {
+    // App Check initialization is optional, so we continue even if it fails
+    print('App Check initialization failed (this is okay): $e');
+  }
+
+  // Initialize dependencies
+  ServiceLocator.init();
   runApp(
-    DevicePreview(
-        enabled: true,
-        builder: (context) {
-          var screenWidth = MediaQuery.of(context).size.width;
-          var screenHight = MediaQuery.of(context).size.height;
-          return ScreenSizeInheritedWidget(
-              screenWidth: screenWidth,
-              screenHight: screenHight,
-              child: GetMaterialApp(
-                debugShowCheckedModeBanner: false,
-                title: 'Firebase Test',
-                theme: ThemeData(
-                  primarySwatch: Colors.orange,
-                ),
-                initialRoute: '/login',
-                getPages: [
-                  GetPage(name: '/login', page: () => LoginPage()),
-                  GetPage(name: '/signup', page: () => SignUpPage()),
-                  GetPage(name: '/home', page: () => Home()),
-                ],
-              ));
-        }),
+    GetMaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'Firebase Test',
+      theme: ThemeData(
+        primarySwatch: Colors.orange,
+      ),
+      initialRoute: AppPages.login,
+      getPages: AppRoutes.routes,
+    ),
   );
 }
